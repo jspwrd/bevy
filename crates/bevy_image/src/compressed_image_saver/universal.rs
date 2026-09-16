@@ -37,11 +37,40 @@ impl CompressedImageSaverUniversal {
             }
 
             let mut source_image = compressor_params.source_image_mut(0);
-            let size = image.size();
-            let Some(ref data) = image.data else {
+            let source_size = image.size();
+            let Some(ref source_data) = image.data else {
                 return Err(CompressedImageSaverError::UninitializedImage);
             };
-            source_image.init(data, size.x, size.y, 4);
+
+            let target_size = match settings.size_limit {
+                Some(limit) if source_size.x.max(source_size.y) > limit => {
+                    let scale = limit as f32 / source.x.max(source_sizze.y) as f32;
+                    let width = (source_size.x as f32 * scale).round().max(1.0) as u32;
+                    let height = (source_size.y as f32 * scale).round().max(1.0) as u32;
+                    UVec2::new(
+                        width.max(4).next_multiple_of(4),
+                        heigth.max(4).next_multiple_of(4),
+                    )
+                }
+                _ => source_size,
+            };
+
+            let (data, size): (Cow<[u8]>, UVec2) = if target_size == source_size {
+                (Cow::Borrowed(source_data), source_size)
+            } else {
+                let buffer =
+                    image::RgbaImage::from_raw(source_size.x, source_size.y, source_data.to_vec())
+                        .expect("image data should match its declared size");
+                let resized = image::imageops::resize(
+                    &buffer,
+                    target_size.x,
+                    target_size.y,
+                    image::imageops::FilterType::Lanczos3,
+                );
+                (Cow::Owned(resized.into_raw()), target_size)
+            };
+
+            source_image.init(&data, target_size.x, target_size.y, 4);
 
             let mut compressor = Compressor::new(4);
             #[expect(
