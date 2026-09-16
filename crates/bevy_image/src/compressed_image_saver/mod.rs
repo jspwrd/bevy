@@ -174,10 +174,10 @@ pub struct CompressedImageSaverSettings {
     /// Defaults to `true`. Mipmaps prevent aliasing when textures are minified and improve GPU
     /// cache locality, so they are almost always wanted for material textures.
     pub generate_mipmaps: bool,
-    // The size limit the compressed output should use.
-    //
-    // Defaults to None. Size limit downscales saved image to the set value, but will not upscale
-    // if the input image is already below the limit.
+    /// The size limit the compressed output should use.
+    ///
+    /// Defaults to None. Size limit downscales saved image to the set value, but will not upscale
+    /// if the input image is already below the limit.
     pub size_limit: Option<u32>,
 }
 
